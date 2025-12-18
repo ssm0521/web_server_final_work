@@ -1,0 +1,379 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  INSTRUCTOR
+  STUDENT
+}
+
+enum AttendanceStatus {
+  PENDING    // 0 - 미정
+  PRESENT    // 1 - 출석
+  LATE       // 2 - 지각
+  ABSENT     // 3 - 결석
+  EXCUSED    // 4 - 공결
+}
+
+enum AttendanceMethod {
+  ELECTRONIC    // 전자출결
+  CODE          // 인증번호 입력
+  ROLL_CALL     // 호명
+}
+
+enum ExcuseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AppealStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  ATTENDANCE_OPEN
+  ATTENDANCE_CLOSE
+  EXCUSE_RESULT
+  APPEAL_RESULT
+  COURSE_ANNOUNCEMENT
+  VOTE_NOTIFICATION
+  ABSENCE_WARNING
+}
+
+// 사용자
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String
+  name         String
+  studentNumber String? // 학번 (학생인 경우 필수)
+  role         UserRole
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // 관계
+  instructorCourses Course[]           @relation("Instructor")
+  enrollments      Enrollment[]
+  attendances      Attendance[]
+  excuseRequests   ExcuseRequest[]
+  appeals          Appeal[]
+  sentMessages     Message[]           @relation("Sender")
+  receivedMessages Message[]           @relation("Receiver")
+  notifications    Notification[]
+  auditLogs        AuditLog[]
+  voteRecords      VoteRecord[]
+
+  @@index([email])
+  @@index([role])
+  @@index([studentNumber])
+}
+
+// 학기
+model Semester {
+  id        String   @id @default(cuid())
+  year      Int
+  term      Int      // 1: 1학기, 2: 2학기
+  name      String   // 예: "2025년 2학기"
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses Course[]
+
+  @@unique([year, term])
+  @@index([year, term])
+}
+
+// 학과
+model Department {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  code      String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses Course[]
+
+  @@index([name])
+}
+
+// 강의/과목
+model Course {
+  id           String   @id @default(cuid())
+  title        String
+  code         String   // 과목 코드
+  section      String   // 분반
+  instructorId String
+  semesterId   String
+  departmentId String?
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // 관계
+  instructor  User        @relation("Instructor", fields: [instructorId], references: [id])
+  semester    Semester    @relation(fields: [semesterId], references: [id])
+  department  Department? @relation(fields: [departmentId], references: [id])
+  enrollments Enrollment[]
+  sessions    ClassSession[]
+  policy      AttendancePolicy?
+  announcements Announcement[]
+  votes       Vote[]
+
+  @@unique([code, section, semesterId])
+  @@index([instructorId])
+  @@index([semesterId])
+}
+
+// 출석 정책
+model AttendancePolicy {
+  id        String   @id @default(cuid())
+  courseId  String   @unique
+  maxAbsent Int      @default(3) // 최대 결석 횟수
+  lateToAbsent Int   @default(3) // 지각 몇 회 = 결석 1회
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+// 수강신청
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+// 수업 세션 (주차별 수업)
+model ClassSession {
+  id              String           @id @default(cuid())
+  courseId        String
+  week            Int              // 주차
+  startAt         DateTime
+  endAt           DateTime
+  room            String?
+  attendanceMethod AttendanceMethod
+  attendanceCode  String?          // 인증번호 (있는 경우)
+  isOpen          Boolean          @default(false) // 출석 오픈 여부
+  isClosed        Boolean          @default(false) // 출석 마감 여부
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  attendances Attendance[]
+  excuseRequests ExcuseRequest[]
+
+  @@index([courseId])
+  @@index([startAt])
+  @@index([isOpen, isClosed])
+}
+
+// 출석 기록
+model Attendance {
+  id         String          @id @default(cuid())
+  sessionId  String
+  studentId  String
+  status     AttendanceStatus @default(PENDING)
+  checkedAt  DateTime?       // 출석 체크 시간
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  session ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  appeals Appeal[]
+
+  @@unique([sessionId, studentId])
+  @@index([sessionId])
+  @@index([studentId])
+  @@index([status])
+}
+
+// 공결 신청
+model ExcuseRequest {
+  id          String       @id @default(cuid())
+  sessionId   String
+  studentId   String
+  reason      String       // 사유
+  reasonCode  String?      // 사유 코드
+  status      ExcuseStatus @default(PENDING)
+  files       Json?        // 증빙 파일 URL 배열 (JSON 형식)
+  instructorComment String? // 교원 코멘트
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  session ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([studentId])
+  @@index([status])
+}
+
+// 이의제기
+model Appeal {
+  id          String       @id @default(cuid())
+  attendanceId String
+  studentId   String
+  message     String       // 이의 내용
+  status      AppealStatus @default(PENDING)
+  instructorComment String? // 교원 코멘트
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  student    User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([attendanceId])
+  @@index([studentId])
+  @@index([status])
+}
+
+// 메시지
+model Message {
+  id        String   @id @default(cuid())
+  senderId  String
+  receiverId String
+  courseId  String?  // 관련 강의 (있는 경우)
+  subject   String?
+  content   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  sender   User    @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User    @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([isRead])
+}
+
+// 공지사항
+model Announcement {
+  id        String   @id @default(cuid())
+  courseId  String
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([createdAt])
+}
+
+// 투표 (공강 투표 등)
+model Vote {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  description String?
+  endAt       DateTime
+  createdAt   DateTime @default(now())
+
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  voteOptions VoteOption[]
+  voteRecords VoteRecord[]
+
+  @@index([courseId])
+  @@index([endAt])
+}
+
+model VoteOption {
+  id        String   @id @default(cuid())
+  voteId    String
+  label     String   // 예: "찬성", "반대"
+  createdAt DateTime @default(now())
+
+  vote        Vote         @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  voteRecords VoteRecord[]
+
+  @@index([voteId])
+}
+
+model VoteRecord {
+  id        String   @id @default(cuid())
+  voteId    String
+  optionId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  vote   Vote       @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  option VoteOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([voteId, userId])
+  @@index([voteId])
+  @@index([userId])
+}
+
+// 알림
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  content   String
+  isRead    Boolean          @default(false)
+  link      String?          // 클릭 시 이동할 링크
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// 감사 로그
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?  // 작업 수행자 (null이면 시스템)
+  action     String   // 작업 내용
+  targetType String?  // 대상 타입 (예: "Attendance", "ExcuseRequest")
+  targetId   String?  // 대상 ID
+  oldValue   Json?    // 변경 전 값
+  newValue   Json?    // 변경 후 값
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+}
+
+// 시스템 설정
+model SystemSettings {
+  id        String   @id @default("system") // 단일 레코드만 존재
+  key       String   @unique
+  value     Json     // 설정 값 (JSON 형식)
+  updatedAt DateTime @updatedAt
+  updatedBy String?  // 마지막 수정자 ID
+
+  @@map("system_settings")
+}
+

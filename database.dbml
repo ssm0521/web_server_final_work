@@ -1,0 +1,373 @@
+Enum "User_role_enum" {
+  "ADMIN"
+  "INSTRUCTOR"
+  "STUDENT"
+}
+
+Enum "ClassSession_attendanceMethod_enum" {
+  "ELECTRONIC"
+  "CODE"
+  "ROLL_CALL"
+}
+
+Enum "Attendance_status_enum" {
+  "PENDING"
+  "PRESENT"
+  "LATE"
+  "ABSENT"
+  "EXCUSED"
+}
+
+Enum "ExcuseRequest_status_enum" {
+  "PENDING"
+  "APPROVED"
+  "REJECTED"
+}
+
+Enum "Appeal_status_enum" {
+  "PENDING"
+  "APPROVED"
+  "REJECTED"
+}
+
+Enum "Notification_type_enum" {
+  "ATTENDANCE_OPEN"
+  "ATTENDANCE_CLOSE"
+  "EXCUSE_RESULT"
+  "APPEAL_RESULT"
+  "COURSE_ANNOUNCEMENT"
+  "VOTE_NOTIFICATION"
+  "ABSENCE_WARNING"
+  "MESSAGE_RECEIVED"
+}
+
+Table "User" {
+  "id" VARCHAR(191) [pk, not null]
+  "email" VARCHAR(191) [not null]
+  "password" VARCHAR(191) [not null]
+  "name" VARCHAR(191) [not null]
+  "studentNumber" VARCHAR(191)
+  "role" User_role_enum [not null]
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+  "updatedAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    email [unique, name: "User_email_key"]
+    email [name: "User_email_idx"]
+    role [name: "User_role_idx"]
+    studentNumber [name: "User_studentNumber_idx"]
+  }
+}
+
+Table "Semester" {
+  "id" VARCHAR(191) [pk, not null]
+  "year" INT [not null]
+  "term" INT [not null]
+  "name" VARCHAR(191) [not null]
+  "startDate" DATETIME(3) [not null]
+  "endDate" DATETIME(3) [not null]
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+  "updatedAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    (year, term) [unique, name: "Semester_year_term_key"]
+    (year, term) [name: "Semester_year_term_idx"]
+  }
+}
+
+Table "Department" {
+  "id" VARCHAR(191) [pk, not null]
+  "name" VARCHAR(191) [not null]
+  "code" VARCHAR(191)
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+  "updatedAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    name [unique, name: "Department_name_key"]
+    code [unique, name: "Department_code_key"]
+    name [name: "Department_name_idx"]
+  }
+}
+
+Table "Course" {
+  "id" VARCHAR(191) [pk, not null]
+  "title" VARCHAR(191) [not null]
+  "code" VARCHAR(191) [not null]
+  "section" VARCHAR(191) [not null]
+  "instructorId" VARCHAR(191) [not null]
+  "semesterId" VARCHAR(191) [not null]
+  "departmentId" VARCHAR(191)
+  "description" TEXT
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+  "updatedAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    (code, section, semesterId) [unique, name: "Course_code_section_semesterId_key"]
+    instructorId [name: "Course_instructorId_idx"]
+    semesterId [name: "Course_semesterId_idx"]
+  }
+}
+
+Table "AttendancePolicy" {
+  "id" VARCHAR(191) [pk, not null]
+  "courseId" VARCHAR(191) [not null]
+  "maxAbsent" INT [not null, default: 3]
+  "lateToAbsent" INT [not null, default: 3]
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+  "updatedAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    courseId [unique, name: "AttendancePolicy_courseId_key"]
+  }
+}
+
+Table "Enrollment" {
+  "id" VARCHAR(191) [pk, not null]
+  "userId" VARCHAR(191) [not null]
+  "courseId" VARCHAR(191) [not null]
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    (userId, courseId) [unique, name: "Enrollment_userId_courseId_key"]
+    userId [name: "Enrollment_userId_idx"]
+    courseId [name: "Enrollment_courseId_idx"]
+  }
+}
+
+Table "ClassSession" {
+  "id" VARCHAR(191) [pk, not null]
+  "courseId" VARCHAR(191) [not null]
+  "week" INT [not null]
+  "startAt" DATETIME(3) [not null]
+  "endAt" DATETIME(3) [not null]
+  "room" VARCHAR(191)
+  "attendanceMethod" ClassSession_attendanceMethod_enum [not null]
+  "attendanceCode" VARCHAR(191)
+  "isOpen" BOOLEAN [not null, default: FALSE]
+  "isClosed" BOOLEAN [not null, default: FALSE]
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+  "updatedAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    courseId [name: "ClassSession_courseId_idx"]
+    startAt [name: "ClassSession_startAt_idx"]
+    (isOpen, isClosed) [name: "ClassSession_isOpen_isClosed_idx"]
+  }
+}
+
+Table "Attendance" {
+  "id" VARCHAR(191) [pk, not null]
+  "sessionId" VARCHAR(191) [not null]
+  "studentId" VARCHAR(191) [not null]
+  "status" Attendance_status_enum [not null, default: 'PENDING']
+  "checkedAt" DATETIME(3)
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+  "updatedAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    (sessionId, studentId) [unique, name: "Attendance_sessionId_studentId_key"]
+    sessionId [name: "Attendance_sessionId_idx"]
+    studentId [name: "Attendance_studentId_idx"]
+    status [name: "Attendance_status_idx"]
+  }
+}
+
+Table "ExcuseRequest" {
+  "id" VARCHAR(191) [pk, not null]
+  "sessionId" VARCHAR(191) [not null]
+  "studentId" VARCHAR(191) [not null]
+  "reason" TEXT [not null]
+  "reasonCode" VARCHAR(191)
+  "status" ExcuseRequest_status_enum [not null, default: 'PENDING']
+  "files" JSON
+  "instructorComment" TEXT
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+  "updatedAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    sessionId [name: "ExcuseRequest_sessionId_idx"]
+    studentId [name: "ExcuseRequest_studentId_idx"]
+    status [name: "ExcuseRequest_status_idx"]
+  }
+}
+
+Table "Appeal" {
+  "id" VARCHAR(191) [pk, not null]
+  "attendanceId" VARCHAR(191) [not null]
+  "studentId" VARCHAR(191) [not null]
+  "message" TEXT [not null]
+  "status" Appeal_status_enum [not null, default: 'PENDING']
+  "instructorComment" TEXT
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+  "updatedAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    attendanceId [name: "Appeal_attendanceId_idx"]
+    studentId [name: "Appeal_studentId_idx"]
+    status [name: "Appeal_status_idx"]
+  }
+}
+
+Table "Message" {
+  "id" VARCHAR(191) [pk, not null]
+  "senderId" VARCHAR(191) [not null]
+  "receiverId" VARCHAR(191) [not null]
+  "courseId" VARCHAR(191)
+  "subject" VARCHAR(191)
+  "content" TEXT [not null]
+  "isRead" BOOLEAN [not null, default: FALSE]
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    senderId [name: "Message_senderId_idx"]
+    receiverId [name: "Message_receiverId_idx"]
+    isRead [name: "Message_isRead_idx"]
+  }
+}
+
+Table "Announcement" {
+  "id" VARCHAR(191) [pk, not null]
+  "courseId" VARCHAR(191) [not null]
+  "title" VARCHAR(191) [not null]
+  "content" TEXT [not null]
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+  "updatedAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    courseId [name: "Announcement_courseId_idx"]
+    createdAt [name: "Announcement_createdAt_idx"]
+  }
+}
+
+Table "Vote" {
+  "id" VARCHAR(191) [pk, not null]
+  "courseId" VARCHAR(191) [not null]
+  "title" VARCHAR(191) [not null]
+  "description" TEXT
+  "endAt" DATETIME(3) [not null]
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    courseId [name: "Vote_courseId_idx"]
+    endAt [name: "Vote_endAt_idx"]
+  }
+}
+
+Table "VoteOption" {
+  "id" VARCHAR(191) [pk, not null]
+  "voteId" VARCHAR(191) [not null]
+  "label" VARCHAR(191) [not null]
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    voteId [name: "VoteOption_voteId_idx"]
+  }
+}
+
+Table "VoteRecord" {
+  "id" VARCHAR(191) [pk, not null]
+  "voteId" VARCHAR(191) [not null]
+  "optionId" VARCHAR(191) [not null]
+  "userId" VARCHAR(191) [not null]
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    (voteId, userId) [unique, name: "VoteRecord_voteId_userId_key"]
+    voteId [name: "VoteRecord_voteId_idx"]
+    userId [name: "VoteRecord_userId_idx"]
+  }
+}
+
+Table "Notification" {
+  "id" VARCHAR(191) [pk, not null]
+  "userId" VARCHAR(191) [not null]
+  "type" Notification_type_enum [not null]
+  "title" VARCHAR(191) [not null]
+  "content" TEXT [not null]
+  "isRead" BOOLEAN [not null, default: FALSE]
+  "link" VARCHAR(191)
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    userId [name: "Notification_userId_idx"]
+    isRead [name: "Notification_isRead_idx"]
+    createdAt [name: "Notification_createdAt_idx"]
+  }
+}
+
+Table "AuditLog" {
+  "id" VARCHAR(191) [pk, not null]
+  "userId" VARCHAR(191)
+  "action" VARCHAR(191) [not null]
+  "targetType" VARCHAR(191)
+  "targetId" VARCHAR(191)
+  "oldValue" JSON
+  "newValue" JSON
+  "ipAddress" VARCHAR(191)
+  "userAgent" TEXT
+  "createdAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+
+  Indexes {
+    userId [name: "AuditLog_userId_idx"]
+    (targetType, targetId) [name: "AuditLog_targetType_targetId_idx"]
+    createdAt [name: "AuditLog_createdAt_idx"]
+  }
+}
+
+Table "system_settings" {
+  "id" VARCHAR(191) [pk, not null, default: 'system']
+  "key" VARCHAR(191) [not null]
+  "value" JSON [not null]
+  "updatedAt" DATETIME(3) [not null, default: `CURRENT_TIMESTAMP(3)`]
+  "updatedBy" VARCHAR(191)
+
+  Indexes {
+    key [unique, name: "SystemSettings_key_key"]
+  }
+}
+
+Ref "Course_instructorId_fkey":"User"."id" < "Course"."instructorId" [update: cascade, delete: restrict]
+
+Ref "Course_semesterId_fkey":"Semester"."id" < "Course"."semesterId" [update: cascade, delete: restrict]
+
+Ref "Course_departmentId_fkey":"Department"."id" < "Course"."departmentId" [update: cascade, delete: set null]
+
+Ref "AttendancePolicy_courseId_fkey":"Course"."id" < "AttendancePolicy"."courseId" [update: cascade, delete: cascade]
+
+Ref "Enrollment_userId_fkey":"User"."id" < "Enrollment"."userId" [update: cascade, delete: cascade]
+
+Ref "Enrollment_courseId_fkey":"Course"."id" < "Enrollment"."courseId" [update: cascade, delete: cascade]
+
+Ref "ClassSession_courseId_fkey":"Course"."id" < "ClassSession"."courseId" [update: cascade, delete: cascade]
+
+Ref "Attendance_sessionId_fkey":"ClassSession"."id" < "Attendance"."sessionId" [update: cascade, delete: cascade]
+
+Ref "Attendance_studentId_fkey":"User"."id" < "Attendance"."studentId" [update: cascade, delete: cascade]
+
+Ref "ExcuseRequest_sessionId_fkey":"ClassSession"."id" < "ExcuseRequest"."sessionId" [update: cascade, delete: cascade]
+
+Ref "ExcuseRequest_studentId_fkey":"User"."id" < "ExcuseRequest"."studentId" [update: cascade, delete: cascade]
+
+Ref "Appeal_attendanceId_fkey":"Attendance"."id" < "Appeal"."attendanceId" [update: cascade, delete: cascade]
+
+Ref "Appeal_studentId_fkey":"User"."id" < "Appeal"."studentId" [update: cascade, delete: cascade]
+
+Ref "Message_senderId_fkey":"User"."id" < "Message"."senderId" [update: cascade, delete: cascade]
+
+Ref "Message_receiverId_fkey":"User"."id" < "Message"."receiverId" [update: cascade, delete: cascade]
+
+Ref "Announcement_courseId_fkey":"Course"."id" < "Announcement"."courseId" [update: cascade, delete: cascade]
+
+Ref "Vote_courseId_fkey":"Course"."id" < "Vote"."courseId" [update: cascade, delete: cascade]
+
+Ref "VoteOption_voteId_fkey":"Vote"."id" < "VoteOption"."voteId" [update: cascade, delete: cascade]
+
+Ref "VoteRecord_voteId_fkey":"Vote"."id" < "VoteRecord"."voteId" [update: cascade, delete: cascade]
+
+Ref "VoteRecord_optionId_fkey":"VoteOption"."id" < "VoteRecord"."optionId" [update: cascade, delete: cascade]
+
+Ref "VoteRecord_userId_fkey":"User"."id" < "VoteRecord"."userId" [update: cascade, delete: cascade]
+
+Ref "Notification_userId_fkey":"User"."id" < "Notification"."userId" [update: cascade, delete: cascade]
+
+Ref "AuditLog_userId_fkey":"User"."id" < "AuditLog"."userId" [update: cascade, delete: set null]
