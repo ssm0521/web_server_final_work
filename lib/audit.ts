@@ -4,15 +4,15 @@ import { NextRequest } from "next/server"
 interface CreateAuditLogProps {
   userId?: string | null
   action: string
-  targetType?: string
-  targetId?: string
+  targetType?: string | null
+  targetId?: string | null
   oldValue?: any
   newValue?: any
   request?: NextRequest
 }
 
 /**
- * 감사 로그 생성
+ * 감사 로그 생성 (공통)
  */
 export async function createAuditLog({
   userId,
@@ -24,38 +24,37 @@ export async function createAuditLog({
   request,
 }: CreateAuditLogProps) {
   try {
-    // IP 주소 및 User-Agent 추출
-    let ipAddress: string | undefined
-    let userAgent: string | undefined
+    let ipAddress: string | null = null
+    let userAgent: string | null = null
 
     if (request) {
       ipAddress =
-        request.headers.get("x-forwarded-for")?.split(",")[0] ||
-        request.headers.get("x-real-ip") ||
-        undefined
-      userAgent = request.headers.get("user-agent") || undefined
+        request.headers.get("x-forwarded-for")?.split(",")[0] ??
+        request.headers.get("x-real-ip") ??
+        null
+      userAgent = request.headers.get("user-agent")
     }
 
     await prisma.auditLog.create({
       data: {
-        userId: userId || null,
+        userId: userId ?? null,
         action,
-        targetType: targetType || null,
-        targetId: targetId || null,
+        targetType: targetType ?? null,
+        targetId: targetId ?? null,
         oldValue: oldValue ? JSON.parse(JSON.stringify(oldValue)) : null,
         newValue: newValue ? JSON.parse(JSON.stringify(newValue)) : null,
-        ipAddress: ipAddress || null,
-        userAgent: userAgent || null,
+        ipAddress,
+        userAgent,
       },
     })
   } catch (error) {
-    // 감사 로그 실패는 시스템 오류를 발생시키지 않도록 조용히 처리
+    // 감사 로그 실패는 서비스 흐름에 영향 주지 않음
     console.error("감사 로그 생성 실패:", error)
   }
 }
 
 /**
- * 사용자 인증 관련 로그
+ * 인증 관련 로그
  */
 export async function logAuthAction(
   action: "LOGIN" | "LOGOUT" | "REGISTER",
@@ -70,7 +69,7 @@ export async function logAuthAction(
 }
 
 /**
- * 사용자 관리 관련 로그
+ * 사용자 관리 로그
  */
 export async function logUserAction(
   action: "CREATE" | "UPDATE" | "DELETE" | "ROLE_CHANGE",
@@ -92,7 +91,7 @@ export async function logUserAction(
 }
 
 /**
- * 강의 관리 관련 로그
+ * 강의 관리 로그
  */
 export async function logCourseAction(
   action: "CREATE" | "UPDATE" | "DELETE",
@@ -114,7 +113,7 @@ export async function logCourseAction(
 }
 
 /**
- * ✅ 출석 관리 관련 로그 (여기 수정됨)
+ * 출석 관리 로그 ✅ (CHECK → CHECK_IN / CHECK_OUT 정리 완료)
  */
 export async function logAttendanceAction(
   action:
@@ -141,7 +140,7 @@ export async function logAttendanceAction(
 }
 
 /**
- * 공결 신청 관련 로그
+ * 공결 신청 로그
  */
 export async function logExcuseAction(
   action: "CREATE" | "APPROVE" | "REJECT",
@@ -163,7 +162,7 @@ export async function logExcuseAction(
 }
 
 /**
- * 이의제기 관련 로그
+ * 이의제기 로그
  */
 export async function logAppealAction(
   action: "CREATE" | "APPROVE" | "REJECT",
@@ -185,13 +184,12 @@ export async function logAppealAction(
 }
 
 /**
- * 출석 정책 관련 로그
+ * 출석 정책 로그
  */
 export async function logPolicyAction(
   action: "CREATE" | "UPDATE",
   userId: string,
   policyId: string,
-  courseId: string,
   oldValue?: any,
   newValue?: any,
   request?: NextRequest
@@ -208,7 +206,7 @@ export async function logPolicyAction(
 }
 
 /**
- * 세션 관리 관련 로그
+ * 세션 관리 로그
  */
 export async function logSessionAction(
   action: "CREATE" | "UPDATE" | "DELETE" | "OPEN" | "CLOSE" | "CODE_REGENERATE",
@@ -230,7 +228,7 @@ export async function logSessionAction(
 }
 
 /**
- * 시스템 설정 관련 로그
+ * 시스템 설정 로그
  */
 export async function logSystemSettingsAction(
   action: string,
