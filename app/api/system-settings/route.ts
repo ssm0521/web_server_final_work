@@ -4,6 +4,11 @@ import { getSystemSettings, updateSystemSettings, SystemSettings } from "@/lib/s
 import { z } from "zod"
 import { logSystemSettingsAction } from "@/lib/audit"
 
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+export const fetchCache = "force-no-store"
+
 const systemSettingsSchema = z.object({
   defaultMaxAbsent: z.number().int().min(1).max(20).optional(),
   defaultLateToAbsent: z.number().int().min(1).max(10).optional(),
