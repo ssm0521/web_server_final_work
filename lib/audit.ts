@@ -114,10 +114,15 @@ export async function logCourseAction(
 }
 
 /**
- * 출석 관리 관련 로그
+ * ✅ 출석 관리 관련 로그 (여기 수정됨)
  */
 export async function logAttendanceAction(
-  action: "CHECK" | "UPDATE" | "STATUS_CHANGE",
+  action:
+    | "CREATE"
+    | "UPDATE"
+    | "CHECK_IN"
+    | "CHECK_OUT"
+    | "STATUS_CHANGE",
   userId: string,
   attendanceId: string,
   oldValue?: any,
@@ -244,4 +249,3 @@ export async function logSystemSettingsAction(
     request,
   })
 }
-
