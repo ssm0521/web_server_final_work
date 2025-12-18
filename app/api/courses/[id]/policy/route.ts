@@ -119,13 +119,11 @@ export async function PUT(
       course.policy ? "UPDATE" : "CREATE",
       session.user.id,
       policy.id,
-      params.id,
       oldPolicy,
       {
         maxAbsent: policy.maxAbsent,
         lateToAbsent: policy.lateToAbsent,
-      },
-      request
+      }
     )
 
     return NextResponse.json(policy)

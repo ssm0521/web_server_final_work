@@ -58,13 +58,13 @@ export async function getSystemSettings(): Promise<SystemSettings> {
       await prisma.systemSettings.create({
         data: {
           key: "main",
-          value: DEFAULT_SETTINGS,
+          value: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
         },
       })
       return DEFAULT_SETTINGS
     }
 
-    return settings.value as SystemSettings
+    return settings.value as unknown as SystemSettings
   } catch (error) {
     console.error("시스템 설정 조회 오류:", error)
     return DEFAULT_SETTINGS

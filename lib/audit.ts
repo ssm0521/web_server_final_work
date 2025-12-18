@@ -191,8 +191,7 @@ export async function logPolicyAction(
   userId: string,
   policyId: string,
   oldValue?: any,
-  newValue?: any,
-  request?: NextRequest
+  newValue?: any
 ) {
   await createAuditLog({
     userId,
@@ -201,7 +200,6 @@ export async function logPolicyAction(
     targetId: policyId,
     oldValue,
     newValue,
-    request,
   })
 }
 

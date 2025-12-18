@@ -170,7 +170,7 @@ export async function POST(
       })
       
       // 감사 로그 기록
-      await logAttendanceAction("CHECK", session.user.id, attendance.id, null, {
+      await logAttendanceAction("CHECK_IN", session.user.id, attendance.id, null, {
         status: attendance.status,
         checkedAt: attendance.checkedAt,
       }, request)
