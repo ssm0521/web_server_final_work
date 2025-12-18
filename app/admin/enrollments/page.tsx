@@ -105,9 +105,10 @@ export default function EnrollmentsPage() {
                 <strong>course_id</strong>: 강의 코드+분반 또는 강의 ID
               </li>
             </ul>
-            <p className="mt-2 text-sm text-blue-800">
-              예시: user_email="student@test.com", course_code="CS301", course_section="01"
-            </p>
+              <p className="mt-2 text-sm text-blue-800">
+                예시: user_email=&quot;student@test.com&quot;, course_code=&quot;CS301&quot;, course_section=&quot;01&quot;
+              </p>
+
           </div>
 
           <form onSubmit={handleUpload} className="space-y-4">
