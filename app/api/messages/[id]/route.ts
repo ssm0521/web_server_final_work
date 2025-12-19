@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 
+
 // 메시지 상세 조회 및 읽음 처리
 export async function GET(
   request: NextRequest,

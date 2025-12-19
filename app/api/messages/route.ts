@@ -5,6 +5,7 @@ import { z } from "zod"
 import { createNotification } from "@/lib/notifications"
 import { NotificationType } from "@prisma/client"
 
+
 const messageSchema = z.object({
   receiverId: z.string().min(1, "수신자를 선택하세요"),
   courseId: z.string().optional().nullable(),

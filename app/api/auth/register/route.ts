@@ -5,6 +5,12 @@ import { UserRole } from "@prisma/client"
 import { z } from "zod"
 import { logUserAction } from "@/lib/audit"
 
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+export const fetchCache = "force-no-store"
+
+
 const registerSchema = z.object({
   email: z.string().email("올바른 이메일 형식이 아닙니다"),
   password: z.string().min(6, "비밀번호는 최소 6자 이상이어야 합니다"),

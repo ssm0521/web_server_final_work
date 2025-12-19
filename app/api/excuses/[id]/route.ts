@@ -6,6 +6,12 @@ import { ExcuseStatus } from "@prisma/client"
 import { notifyExcuseResult } from "@/lib/notifications"
 import { logExcuseAction } from "@/lib/audit"
 
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+export const fetchCache = "force-no-store"
+
+
 const updateExcuseSchema = z.object({
   status: z.enum(["APPROVED", "REJECTED"]),
   instructorComment: z.string().optional(),

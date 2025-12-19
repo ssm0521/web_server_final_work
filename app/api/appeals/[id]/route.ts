@@ -6,6 +6,12 @@ import { AppealStatus, AttendanceStatus } from "@prisma/client"
 import { notifyAppealResult } from "@/lib/notifications"
 import { logAppealAction, logAttendanceAction } from "@/lib/audit"
 
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+export const fetchCache = "force-no-store"
+
+
 const updateAppealSchema = z.object({
   status: z.enum(["APPROVED", "REJECTED"]),
   instructorComment: z.string().optional(),

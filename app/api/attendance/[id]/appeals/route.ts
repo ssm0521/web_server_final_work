@@ -3,6 +3,12 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { z } from "zod"
 
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+export const fetchCache = "force-no-store"
+
+
 const appealSchema = z.object({
   message: z.string().min(1, "이의 내용을 입력하세요"),
 })

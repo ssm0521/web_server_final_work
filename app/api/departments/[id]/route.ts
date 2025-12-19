@@ -3,6 +3,12 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { z } from "zod"
 
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+export const fetchCache = "force-no-store"
+
+
 const updateDepartmentSchema = z.object({
   name: z.string().min(1).optional(),
   code: z.string().optional().nullable(),

@@ -4,6 +4,12 @@ import { prisma } from "@/lib/db"
 import { z } from "zod"
 import { logCourseAction } from "@/lib/audit"
 
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+export const fetchCache = "force-no-store"
+
+
 const courseSchema = z.object({
   title: z.string().min(1, "강의명을 입력하세요"),
   code: z.string().min(1, "과목 코드를 입력하세요"),

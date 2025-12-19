@@ -5,6 +5,12 @@ import { z } from "zod"
 import { AttendanceStatus } from "@prisma/client"
 import { logAttendanceAction } from "@/lib/audit"
 
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+export const fetchCache = "force-no-store"
+
+
 const updateAttendanceSchema = z.object({
   status: z.enum(["PRESENT", "LATE", "ABSENT", "EXCUSED", "PENDING"]),
 })
